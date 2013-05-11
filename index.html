@@ -62,7 +62,7 @@
 		<fieldset>
 			<legend>Orientation</legend>
 			<label for="r-left">left </label>
-			<input type="radio" id="r-left" name="orientation" value="left">
+			<input type="radio" id="r-left" name="orientation" value="left" checked>
 			<label for="r-top">top </label>
 			<input type="radio" id="r-top" name="orientation" value="top">
 		</fieldset>
@@ -361,6 +361,24 @@
 	   function get(id) {
 		  return document.getElementById(id);  
 		};
+		
+		
+    var top = get('r-top'), 
+    left = get('r-left');
+    
+    function changeHandler() {
+        if(this.checked) {
+            top.disabled = left.disabled = true;
+            st.switchPosition(this.value, "animate", {
+                onComplete: function(){
+                    top.disabled = left.disabled = false;
+                }
+            });
+        }
+    };
+    
+    top.onchange = left.onchange = changeHandler;
+    //end
 		//end
 	}
 	</script>
