@@ -100,6 +100,7 @@
 				window.maxGenerations = parseInt($('#generationMax').val());
 				window.nameList = $('#namesList').val().split("\n");
 				$("#start").remove(); $('body').append($("<div>",{id:"start"}));
+				$("#start").css('height',$(window).height());
 				window.base = new DataNode(0,'M',window.nameList.pop());
 				window.base.generateTree();
 				graphTree();
