@@ -3,12 +3,19 @@
 <head>
 	<title>Graph</title>
 	<style type="text/css">
+		html, body {
+			margin: 0;
+			padding: 0;
+		}
+	
 		#orient {
+			float: left;
 			width: 20%;
 		}
 		#start {
-			width: 75%;
-			height: 800px;
+			float: left;
+			width: 80%;
+			height: 600px;
 			position: relative;
 			margin: auto;
 			overflow: hidden;
@@ -52,18 +59,31 @@
 </head>
 <body>
 	<div id="orient">
-		<label for="r-left">left </label>
-		<input type="radio" id="r-left" name="orientation" value="left">
-		<label for="r-top">top </label>
-		<input type="radio" id="r-top" name="orientation" value="top">
-		<label for="r-bottom">bottom </label>
-		<input type="radio" id="r-bottom" name="orientation" value="bottom">
-		<label for="r-right">right </label>
-		<input type="radio" id="r-right" name="orientation" value="right">
+		<fieldset>
+			<legend>Orientation</legend>
+			<label for="r-left">left </label>
+			<input type="radio" id="r-left" name="orientation" value="left">
+			<label for="r-top">top </label>
+			<input type="radio" id="r-top" name="orientation" value="top">
+		</fieldset>
+		<fieldset>
+			<legend>Options</legend>
+			<label for="generationMax">generations</label><br />
+			<input type="text" id="generationMax" name="generationMax" style="width:100%" value="4"/><br />
+			<label for="namesList">names</label><br />
+			<textarea type="text" id="namesList" name="namesList" style="height:200px;width:100%"></textarea><br />
+			<button type="button" id="updateButton">Update Tree</button>
+		</fieldset>
 	</div>
 	<div id="start"></div>
 	<script type="text/javascript">
+		$("#start").css('height',$(window).height());
 		window.nodes = [];
+		window.nameList = [];
+		window.genderString = {
+			M: 'Male',
+			F: 'Female'
+		};
 		window.maxGenerations = 4; //static for now
 		window.weightedChildCounts = 
 					[0,
@@ -74,11 +94,24 @@
 					5,5,
 					6];
 					
-		function DataNode(generation,gender){
+					
+		window.bindEvents = function(){
+			$("#updateButton").on('click',function(){
+				window.maxGenerations = parseInt($('#generationMax').val());
+				window.nameList = $('#namesList').val().split("\n");
+				$("#start").remove(); $('body').append($("<div>",{id:"start"}));
+				window.base = new DataNode(0,'M',window.nameList.pop());
+				window.base.generateTree();
+				graphTree();
+			});
+		};
+					
+		function DataNode(generation,gender,parentName){
 			this.id = "generation"+generation+"_"+(Math.floor(Math.random()*10000));
 			this.name = this.id;
 			this.data = {};
 			this.children = [];
+			this.familyName = '';
 			this.addChild = function(node){
 				this.children.push(node);
 				window.nodes.push(node);
@@ -99,24 +132,45 @@
 				
 				for(var i = 0; i < amount; i++)
 				{
-					var n = new DataNode(generation+1,['M','F'][Math.floor(Math.random()*2)]);
+					var n = new DataNode(generation+1,['M','F'][Math.floor(Math.random()*2)],this.familyName);
 					this.addChild(n);
 				}
 			};
 			this.generateTree = function(){
-			/*
+				/*
 				var thisDiv = $('<div>',{class:"entry",id:this.id});
 				thisDiv.html(this.id +'<span class="cc"></span>');
 				thisDiv.appendTo('#'+this.parentElementId);
 				*/
 				
+				this.name = "("+window.genderString[gender]+")<br />";
+				
+				if(gender == 'M')
+				{
+					this.name += parentName;
+					this.familyName = parentName;
+				}
+				else
+				{
+					var newName = window.nameList.pop();
+					if(newName == undefined)
+					{
+						newName = Math.floor(Math.random()*10000);
+					}
+					this.name += newName;
+					this.familyName = newName;
+				}
+				
 				this.addGeneration();
+				
 				for(var c in this.children)
 				{
 					this.children[c].generateTree();
 				}
+				
 				var fid = this.id.replace('generation'+generation+'_','');
-				this.name = "_"+gender+":"+fid+"_ G:"+generation+" / C:"+this.children.length;
+				
+				this.name += "<br />G:"+generation+" / C:"+this.children.length;
 				/*
 				if(this.children.length > 0)
 					$(thisDiv.find('.cc')[0]).html(" | children: "+this.children.length);
@@ -124,10 +178,10 @@
 			};
 		};
 		
-		window.base = new DataNode(0,'M');
+		window.base = new DataNode(0,'M',Math.floor(Math.random()*10000));
 		window.nodes.push(window.base);
 		
-		window.onload = function() {  window.base.generateTree(); graphTree();};
+		window.onload = function() { window.bindEvents(); window.base.generateTree(); graphTree();};
 	</script>
 	<script type="text/javascript">
 	function graphTree(){
@@ -177,7 +231,7 @@
 					  var pos = node.pos.getc(true), nconfig = this.node, data = node.data;
 					  var width  = nconfig.width, height = nconfig.height;
 					  var algnPos = this.getAlignedPos(pos, width, height);
-					  var ctx = canvas.getCtx(), ort = this.config.orientation;
+					  var ctx = canvas.getCtx(), ort = 'top';
 					  ctx.beginPath();
 					  if(ort == 'left' || ort == 'right') {
 						  ctx.moveTo(algnPos.x, algnPos.y + height / 2);
@@ -202,7 +256,7 @@
         //set animation transition type
         transition: $jit.Trans.Quart.easeInOut,
         //set distance between node and its children
-        levelDistance: 50,
+        levelDistance: 60,
         //enable panning
         Navigation: {
           enable:true,
@@ -212,7 +266,7 @@
         //set overridable=true for styling individual
         //nodes or edges
         Node: {
-            height: 40,
+            height: 60,
             width: 60,
             type: 'rectangle',
             color: '#aaa',
@@ -244,7 +298,7 @@
             //set label styles
             var style = label.style;
             style.width = 60 + 'px';
-            style.height = 34 + 'px';            
+            style.height = 51 + 'px';            
             style.cursor = 'pointer';
             style.color = '#333';
             style.fontSize = '0.8em';
@@ -307,24 +361,6 @@
 	   function get(id) {
 		  return document.getElementById(id);  
 		};
-
-		var top = get('r-top'), 
-		left = get('r-left'), 
-		bottom = get('r-bottom'), 
-		right = get('r-right');
-		
-		function changeHandler() {
-			if(this.checked) {
-				top.disabled = bottom.disabled = right.disabled = left.disabled = true;
-				st.switchPosition(this.value, "animate", {
-					onComplete: function(){
-						top.disabled = bottom.disabled = right.disabled = left.disabled = false;
-					}
-				});
-			}
-		};
-		
-		top.onchange = left.onchange = bottom.onchange = right.onchange = changeHandler;
 		//end
 	}
 	</script>
